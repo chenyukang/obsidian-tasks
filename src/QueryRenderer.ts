@@ -16,6 +16,8 @@ import { TaskModal } from './TaskModal';
 import type { Events } from './Events';
 import type { Task } from './Task';
 
+let app: App | undefined;
+
 export class QueryRenderer {
     private readonly app: App;
     private readonly events: Events;
@@ -23,6 +25,7 @@ export class QueryRenderer {
     constructor({ plugin, events }: { plugin: Plugin; events: Events }) {
         this.app = plugin.app;
         this.events = events;
+        app = this.app;
 
         plugin.registerMarkdownCodeBlockProcessor(
             'tasks',
@@ -178,6 +181,14 @@ class QueryRenderChild extends MarkdownRenderChild {
             'contains-task-list',
             'plugin-tasks-query-result',
         ]);
+        tasks.sort(function(a, b) {
+            const atime = app?.vault.getAbstractFileByPath(a.path);
+            const btime = app?.vault.getAbstractFileByPath(b.path);
+            if(atime instanceof TFile && btime instanceof TFile) {
+                return btime.stat.mtime - atime.stat.mtime;
+            }
+            return 0;
+        } );
         for (let i = 0; i < tasksCount; i++) {
             const task = tasks[i];
             const isFilenameUnique = this.isFilenameUnique({ task });
